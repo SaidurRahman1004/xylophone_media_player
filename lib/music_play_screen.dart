@@ -14,28 +14,28 @@ class MusicPlayScreen extends StatefulWidget {
 
 class _MusicPlayScreenState extends State<MusicPlayScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
-  final List<SongModel> _playlist = [
-    SongModel(
-        songName: 'SoundHelix Song 1',
-        artistName: 'T. Schürger',
-        songUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        durationSecond: 255
+  final List<Song> _playlist = [
+    Song(
+      title: 'SoundHelix Song 1',
+      artist: 'T. Schürger',
+      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      durationSecond: 255,
     ),
-    SongModel(
-        songName: 'SoundHelix Song 2',
-        artistName: 'T. Schürger',
-        songUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        durationSecond: 255
+    Song(
+      title: 'SoundHelix Song 2',
+      artist: 'T. Schürger',
+      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      durationSecond: 255,
     ),
-    SongModel(
-        songName: 'SoundHelix Song 3',
-        artistName: 'T. Schürger',
-        songUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        durationSecond: 255
+    Song(
+      title: 'SoundHelix Song 3',
+      artist: 'T. Schürger',
+      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      durationSecond: 255,
     ),
   ]; // List of songs in the playlist
   int _currentIndex = 0; // Index of the currently playing song
-  bool _isPlaying = false; // Playback state
+  bool _isPlaying = false; // Playback state ,play/pause
   Duration _duration = Duration.zero; // Total duration of the song
   Duration _position = Duration.zero; // Current position of the song
 
@@ -59,7 +59,6 @@ class _MusicPlayScreenState extends State<MusicPlayScreen> {
       });
     });
 
-
     _audioPlayer.onPlayerComplete.listen((_) {
       _next(); // Automatically play next song on completion
     });
@@ -77,7 +76,7 @@ class _MusicPlayScreenState extends State<MusicPlayScreen> {
       ); // Set duration of the song to UI
     });
     await _audioPlayer.stop(); // Stop any currently playing song
-    await _audioPlayer.play(UrlSource(_playlist[index].songUrl));
+    await _audioPlayer.play(UrlSource(song.url));
   }
 
   // Play next song in the playlist
@@ -100,6 +99,9 @@ class _MusicPlayScreenState extends State<MusicPlayScreen> {
     if (_isPlaying) {
       await _audioPlayer.pause();
     } else {
+      if (_position >= _duration && _duration > Duration.zero) {
+        await _audioPlayer.seek(Duration.zero);
+      }
       await _audioPlayer.resume();
     }
   }
@@ -121,96 +123,196 @@ class _MusicPlayScreenState extends State<MusicPlayScreen> {
   }
 
   @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  Widget _buildControlButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(32),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isPrimary
+              ? colorScheme.primary
+              : colorScheme.primary.withOpacity(0.1),
+        ),
+        child: Icon(
+          icon,
+          color: isPrimary ? Colors.white : colorScheme.primary,
+          size: 28,
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final SongModel song =
+    final Song song =
         _playlist[_currentIndex]; // Get the currently playing song
-    final double maxSeconds = max(
-      _duration.inSeconds.toDouble(),
-      1,
-    ); // Avoid division by zero
+    final double maxSeconds = _duration.inSeconds > 0
+        ? _duration.inSeconds.toDouble()
+        : 1;
     final double currentSecond = _position.inSeconds.toDouble().clamp(
       0,
       maxSeconds,
     ); // Clamp current seconds to valid range and Use Clamp for safety
     return Scaffold(
       appBar: AppBar(title: const Text('Music Player')),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Column(
-          children: [
-            Card(
-              child: Column(
-                children: [
-                  Text(
-                    song.songName,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    song.artistName,
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  Slider(
-                    min: 0,
-                    max: maxSeconds,
-                    value: currentSecond,
-                    onChanged: (value) async {
-                      final position = Duration(seconds: value.toInt());
-                      await _audioPlayer.seek(
-                        position,
-                      ); // Seek to the new position And Use seek for seeking
-                    },
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xfff5f7ff), Color(0xfffdfbff)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Column(
+            children: [
+              Card(
+                margin: const EdgeInsets.all(12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_formatDuration(_position)),
-                      Text(_formatDuration(_duration)),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                        onPressed: _previous,
-                        icon: Icon(Icons.skip_previous),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Chip(
+                          label: const Text('Now Playing'),
+                          avatar: const Icon(Icons.music_note),
+                        ),
                       ),
-                      IconButton(
-                        onPressed: _togglePlayPause,
-                        icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-                      ),
+                      const SizedBox(height: 8),
 
-                      IconButton(onPressed: _next, icon: Icon(Icons.skip_next)),
+                      Text(
+                        song.title,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        song.artist,
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 16),
+                      Slider(
+                        min: 0,
+                        max: maxSeconds,
+                        value: currentSecond,
+                        onChanged: (value) async {
+                          final position = Duration(seconds: value.toInt());
+                          await _audioPlayer.seek(
+                            position,
+                          ); // Seek to the new position And Use seek for seeking
+                        },
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(_formatDuration(_position)),
+                          Text(_formatDuration(_duration)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildControlButton(
+                            icon: Icons.skip_previous_rounded,
+                            onTap: _previous,
+                          ),
+                          const SizedBox(width: 16),
+
+                          _buildControlButton(
+                            icon: _isPlaying
+                                ? Icons.padding_rounded
+                                : Icons.play_arrow_rounded,
+                            onTap: _togglePlayPause,
+                            isPrimary: true,
+                          ),
+                          const SizedBox(width: 16),
+
+                          _buildControlButton(
+                            icon: Icons.skip_next_rounded,
+                            onTap: _next,
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _playlist.length,
-                itemBuilder: (_, index) {
-                  final SongModel song = _playlist[index];
-                  final bool isCurrent = index == _currentIndex;
-                  return ListTile(
-                    leading: CircleAvatar(child: Text("${index + 1}")),
-                    title: Text(song.songName),
-                    subtitle: Text(song.artistName),
-                    trailing: Icon(
-                      isCurrent && _isPlaying ? Icons.pause : Icons.play_arrow,
-                    ),
-                    onTap: () {
-                      _playSong(index);
+              const SizedBox(height: 16),
+              Expanded(
+                child: Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ListView.builder(
+                    itemCount: _playlist.length,
+                    itemBuilder: (_, index) {
+                      final Song song = _playlist[index];
+                      final bool isCurrent = index == _currentIndex;
+                      return ListTile(
+                        leading: CircleAvatar(child: Text("${index + 1}")),
+                        title: Text(
+                          song.title,
+                          style: TextStyle(
+                            fontWeight: isCurrent
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                        subtitle: Text(song.artist),
+                        trailing: Icon(
+                          isCurrent && _isPlaying
+                              ? Icons.equalizer_rounded
+                              : Icons.play_arrow_rounded,
+                        ),
+                        selected: isCurrent,
+                        selectedTileColor: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.08),
+                        onTap: () {
+                          if(isCurrent){
+                            _togglePlayPause();
+                          }else{
+                            _playSong(index);
+                          }
+                        },
+
+                      );
                     },
-                    selected: isCurrent,
-                  );
-                },
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
-

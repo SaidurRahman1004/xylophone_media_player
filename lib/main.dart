@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Xylophone App (Media Player',
+      title: 'Xylophone Media Player',
       debugShowCheckedModeBanner: false,
       home: MusicPlayScreen(),
 

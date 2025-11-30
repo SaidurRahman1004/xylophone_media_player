@@ -1,12 +1,12 @@
-class SongModel {
-  final String songName;
-  final String artistName;
-  final String songUrl;
+class Song {
+  final String title;
+  final String artist;
+  final String url;
   final int durationSecond;
-  SongModel({
-    required this.songName,
-    required this.artistName,
-    required this.songUrl,
+  Song({
+    required this.title,
+    required this.artist,
+    required this.url,
     required this.durationSecond,
   });
 
